@@ -63,7 +63,6 @@ DOWNLOAD_DELAY = .20
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'jobboard.pipelines.DuplicatesPipeline': 100,
     'jobboard.pipelines.MongoPipeline': 300,
 }
 MONGO_URI = 'mongodb://localhost:27017'

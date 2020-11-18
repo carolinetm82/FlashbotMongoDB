@@ -1,6 +1,7 @@
 from scrapy import Request
 import scrapy
 from pprint import pprint
+import pymongo
 
 
 class FlashbotSpider(scrapy.Spider):
@@ -49,6 +50,5 @@ class FlashbotSpider(scrapy.Spider):
             item["pubDate"] = doc.xpath("pubDate/text()").extract_first()
             item["guid"] = doc.xpath("guid/text()").extract_first()
             #pprint(item, indent=2)
-            print("item scraped:", item["title"])
-  
+            #print("item scraped:", item["title"])
             yield item

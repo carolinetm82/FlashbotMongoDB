@@ -4,54 +4,32 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 
-import logging
-import pymongo
+from jobboard.mongo_provider import MongoProvider
 
-
-from itemadapter import ItemAdapter
-from scrapy.exceptions import DropItem
-
-class DuplicatesPipeline:
-
-    def __init__(self):
-        self.guids_seen = set()
-
-    def process_item(self, item, spider):
-        adapter = ItemAdapter(item)
-        if adapter['guid'] in self.guids_seen:
-            raise DropItem(f"Duplicate item found: {item!r}")
-        else:
-            self.guids_seen.add(adapter['guid'])
-            return item
 
 class MongoPipeline(object):
 
-    collection_name = 'top_posts'
-
-    def __init__(self, mongo_uri, mongo_db):
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
+    def __init__(self, settings):
+        self.mongo_provider = MongoProvider(
+            settings.get('MONGO_URI'),
+            settings.get('MONGO_DATABASE')
+        )
 
     @classmethod
     def from_crawler(cls, crawler):
-        ## pull in information from settings.py
-        return cls(
-            mongo_uri=crawler.settings.get('MONGO_URI'),
-            mongo_db=crawler.settings.get('MONGO_DATABASE')
-        )
+        return cls(crawler.settings)
 
     def open_spider(self, spider):
-        ## initializing spider
-        ## opening db connection
-        self.client = pymongo.MongoClient(self.mongo_uri)
-        self.db = self.client[self.mongo_db]
+        self.collection = self.mongo_provider.get_collection()
 
     def close_spider(self, spider):
-        ## clean up when spider is closed
-        self.client.close()
+        self.mongo_provider.close_connection()
 
     def process_item(self, item, spider):
         ## how to handle each post
-        self.db[self.collection_name].insert(dict(item))
-        logging.debug("Post added to MongoDB")
+        self.collection.find_one_and_update(
+            {"guid": item["guid"]},
+            {"$set": dict(item)},
+            upsert=True
+        )
         return item
