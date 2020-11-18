@@ -7,6 +7,23 @@
 import logging
 import pymongo
 
+
+from itemadapter import ItemAdapter
+from scrapy.exceptions import DropItem
+
+class DuplicatesPipeline:
+
+    def __init__(self):
+        self.guids_seen = set()
+
+    def process_item(self, item, spider):
+        adapter = ItemAdapter(item)
+        if adapter['guid'] in self.guids_seen:
+            raise DropItem(f"Duplicate item found: {item!r}")
+        else:
+            self.guids_seen.add(adapter['guid'])
+            return item
+
 class MongoPipeline(object):
 
     collection_name = 'top_posts'
